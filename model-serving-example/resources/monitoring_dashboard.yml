@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    model_serving_monitor:
+      display_name: "Model Serving Monitor"
+      file_path: ../src/model_serving_monitor.lvdash.json
+      warehouse_id: ${var.warehouse_id}

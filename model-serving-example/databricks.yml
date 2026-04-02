@@ -13,6 +13,8 @@ variables:
     default: recommendation_model
   endpoint_name:
     default: recommendation-endpoint
+  warehouse_id:
+    default: 4312e046b55e5caf
 
 targets:
   dev:

@@ -1,0 +1,451 @@
+{
+  "datasets": [
+    {
+      "name": "summary_kpis",
+      "displayName": "Summary KPIs",
+      "queryLines": [
+        "SELECT ",
+        "  count(*) as total_requests, ",
+        "  round(avg(execution_duration_ms), 1) as avg_latency_ms, ",
+        "  round(sum(CASE WHEN status_code != 200 THEN 1 ELSE 0 END) * 100.0 / count(*), 1) as error_rate_pct ",
+        "FROM main.rob_test.model_serving_payload"
+      ]
+    },
+    {
+      "name": "latency_percentiles",
+      "displayName": "Latency Percentiles",
+      "queryLines": [
+        "SELECT ",
+        "  round(percentile_approx(execution_duration_ms, 0.5), 1) as p50_ms, ",
+        "  round(percentile_approx(execution_duration_ms, 0.95), 1) as p95_ms, ",
+        "  round(percentile_approx(execution_duration_ms, 0.99), 1) as p99_ms, ",
+        "  max(execution_duration_ms) as max_ms ",
+        "FROM main.rob_test.model_serving_payload"
+      ]
+    },
+    {
+      "name": "requests_over_time",
+      "displayName": "Requests Over Time",
+      "queryLines": [
+        "SELECT ",
+        "  date_trunc('HOUR', request_time) as request_hour, ",
+        "  count(*) as request_count, ",
+        "  round(avg(execution_duration_ms), 1) as avg_latency_ms ",
+        "FROM main.rob_test.model_serving_payload ",
+        "GROUP BY 1 ",
+        "ORDER BY 1"
+      ]
+    },
+    {
+      "name": "latency_distribution",
+      "displayName": "Latency Distribution",
+      "queryLines": [
+        "SELECT ",
+        "  CAST(execution_duration_ms AS STRING) as latency_ms, ",
+        "  count(*) as request_count ",
+        "FROM main.rob_test.model_serving_payload ",
+        "GROUP BY 1 ",
+        "ORDER BY CAST(latency_ms AS INT)"
+      ]
+    },
+    {
+      "name": "status_codes",
+      "displayName": "Status Code Distribution",
+      "queryLines": [
+        "SELECT ",
+        "  CAST(status_code AS STRING) as status_code, ",
+        "  count(*) as request_count ",
+        "FROM main.rob_test.model_serving_payload ",
+        "GROUP BY 1 ",
+        "ORDER BY 2 DESC"
+      ]
+    },
+    {
+      "name": "match_types",
+      "displayName": "Match Type Distribution",
+      "queryLines": [
+        "SELECT pred.match_type as match_type, count(*) as cnt ",
+        "FROM ( ",
+        "  SELECT explode(from_json(get_json_object(response, '$.predictions'), ",
+        "    'ARRAY<STRUCT<match_type: STRING, recommended_items: STRING>>')) as pred ",
+        "  FROM main.rob_test.model_serving_payload ",
+        "  WHERE status_code = 200 ",
+        ") ",
+        "GROUP BY 1 ",
+        "ORDER BY 2 DESC"
+      ]
+    },
+    {
+      "name": "recent_requests",
+      "displayName": "Recent Requests",
+      "queryLines": [
+        "SELECT ",
+        "  databricks_request_id, ",
+        "  request_time, ",
+        "  CAST(status_code AS STRING) as status_code, ",
+        "  execution_duration_ms, ",
+        "  requester ",
+        "FROM main.rob_test.model_serving_payload ",
+        "ORDER BY request_time DESC ",
+        "LIMIT 50"
+      ]
+    }
+  ],
+  "pages": [{
+    "name": "overview",
+    "displayName": "Model Serving Monitor",
+    "pageType": "PAGE_TYPE_CANVAS",
+    "layout": [
+      {
+        "widget": {
+          "name": "title",
+          "multilineTextboxSpec": {
+            "lines": ["## Model Serving Monitor"]
+          }
+        },
+        "position": {"x": 0, "y": 0, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "subtitle",
+          "multilineTextboxSpec": {
+            "lines": ["Recommendation endpoint performance, latency, and prediction quality monitoring"]
+          }
+        },
+        "position": {"x": 0, "y": 1, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "total-requests",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "summary_kpis",
+              "fields": [{"name": "total_requests", "expression": "`total_requests`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "total_requests", "displayName": "Total Requests"}
+            },
+            "frame": {"showTitle": true, "title": "Total Requests"}
+          }
+        },
+        "position": {"x": 0, "y": 2, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "avg-latency",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "summary_kpis",
+              "fields": [{"name": "avg_latency_ms", "expression": "`avg_latency_ms`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "avg_latency_ms", "displayName": "Avg Latency (ms)"}
+            },
+            "frame": {"showTitle": true, "title": "Avg Latency (ms)"}
+          }
+        },
+        "position": {"x": 2, "y": 2, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "error-rate",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "summary_kpis",
+              "fields": [{"name": "error_rate_pct", "expression": "`error_rate_pct`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "error_rate_pct", "displayName": "Error Rate (%)"}
+            },
+            "frame": {"showTitle": true, "title": "Error Rate (%)"}
+          }
+        },
+        "position": {"x": 4, "y": 2, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "latency-header",
+          "multilineTextboxSpec": {
+            "lines": ["### Latency Percentiles"]
+          }
+        },
+        "position": {"x": 0, "y": 5, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "p50-latency",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "latency_percentiles",
+              "fields": [{"name": "p50_ms", "expression": "`p50_ms`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "p50_ms", "displayName": "P50 (ms)"}
+            },
+            "frame": {"showTitle": true, "title": "P50 Latency (ms)"}
+          }
+        },
+        "position": {"x": 0, "y": 6, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "p95-latency",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "latency_percentiles",
+              "fields": [{"name": "p95_ms", "expression": "`p95_ms`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "p95_ms", "displayName": "P95 (ms)"}
+            },
+            "frame": {"showTitle": true, "title": "P95 Latency (ms)"}
+          }
+        },
+        "position": {"x": 2, "y": 6, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "p99-latency",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "latency_percentiles",
+              "fields": [{"name": "p99_ms", "expression": "`p99_ms`"}],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "counter",
+            "encodings": {
+              "value": {"fieldName": "p99_ms", "displayName": "P99 (ms)"}
+            },
+            "frame": {"showTitle": true, "title": "P99 Latency (ms)"}
+          }
+        },
+        "position": {"x": 4, "y": 6, "width": 2, "height": 3}
+      },
+      {
+        "widget": {
+          "name": "trends-header",
+          "multilineTextboxSpec": {
+            "lines": ["### Traffic & Performance Trends"]
+          }
+        },
+        "position": {"x": 0, "y": 9, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "request-volume-chart",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "requests_over_time",
+              "fields": [
+                {"name": "request_hour", "expression": "`request_hour`"},
+                {"name": "request_count", "expression": "`request_count`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 3,
+            "widgetType": "bar",
+            "encodings": {
+              "x": {"fieldName": "request_hour", "scale": {"type": "temporal"}, "displayName": "Time"},
+              "y": {"fieldName": "request_count", "scale": {"type": "quantitative"}, "displayName": "Requests"}
+            },
+            "frame": {"showTitle": true, "title": "Request Volume Over Time"}
+          }
+        },
+        "position": {"x": 0, "y": 10, "width": 3, "height": 5}
+      },
+      {
+        "widget": {
+          "name": "latency-over-time-chart",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "requests_over_time",
+              "fields": [
+                {"name": "request_hour", "expression": "`request_hour`"},
+                {"name": "avg_latency_ms", "expression": "`avg_latency_ms`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 3,
+            "widgetType": "line",
+            "encodings": {
+              "x": {"fieldName": "request_hour", "scale": {"type": "temporal"}, "displayName": "Time"},
+              "y": {"fieldName": "avg_latency_ms", "scale": {"type": "quantitative"}, "displayName": "Avg Latency (ms)"}
+            },
+            "frame": {"showTitle": true, "title": "Avg Latency Over Time"}
+          }
+        },
+        "position": {"x": 3, "y": 10, "width": 3, "height": 5}
+      },
+      {
+        "widget": {
+          "name": "distributions-header",
+          "multilineTextboxSpec": {
+            "lines": ["### Distributions"]
+          }
+        },
+        "position": {"x": 0, "y": 15, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "latency-dist-chart",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "latency_distribution",
+              "fields": [
+                {"name": "latency_ms", "expression": "`latency_ms`"},
+                {"name": "request_count", "expression": "`request_count`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 3,
+            "widgetType": "bar",
+            "encodings": {
+              "x": {"fieldName": "latency_ms", "scale": {"type": "categorical"}, "displayName": "Latency (ms)"},
+              "y": {"fieldName": "request_count", "scale": {"type": "quantitative"}, "displayName": "Requests"}
+            },
+            "frame": {"showTitle": true, "title": "Latency Distribution"}
+          }
+        },
+        "position": {"x": 0, "y": 16, "width": 2, "height": 5}
+      },
+      {
+        "widget": {
+          "name": "status-code-chart",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "status_codes",
+              "fields": [
+                {"name": "status_code", "expression": "`status_code`"},
+                {"name": "request_count", "expression": "`request_count`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 3,
+            "widgetType": "pie",
+            "encodings": {
+              "angle": {"fieldName": "request_count", "scale": {"type": "quantitative"}, "displayName": "Requests"},
+              "color": {"fieldName": "status_code", "scale": {"type": "categorical"}, "displayName": "Status Code"}
+            },
+            "frame": {"showTitle": true, "title": "Status Codes"}
+          }
+        },
+        "position": {"x": 2, "y": 16, "width": 2, "height": 5}
+      },
+      {
+        "widget": {
+          "name": "match-type-chart",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "match_types",
+              "fields": [
+                {"name": "match_type", "expression": "`match_type`"},
+                {"name": "cnt", "expression": "`cnt`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 3,
+            "widgetType": "pie",
+            "encodings": {
+              "angle": {"fieldName": "cnt", "scale": {"type": "quantitative"}, "displayName": "Count"},
+              "color": {"fieldName": "match_type", "scale": {"type": "categorical"}, "displayName": "Match Type"}
+            },
+            "frame": {"showTitle": true, "title": "Match Type Distribution"}
+          }
+        },
+        "position": {"x": 4, "y": 16, "width": 2, "height": 5}
+      },
+      {
+        "widget": {
+          "name": "details-header",
+          "multilineTextboxSpec": {
+            "lines": ["### Recent Requests"]
+          }
+        },
+        "position": {"x": 0, "y": 21, "width": 6, "height": 1}
+      },
+      {
+        "widget": {
+          "name": "recent-requests-table",
+          "queries": [{
+            "name": "main_query",
+            "query": {
+              "datasetName": "recent_requests",
+              "fields": [
+                {"name": "databricks_request_id", "expression": "`databricks_request_id`"},
+                {"name": "request_time", "expression": "`request_time`"},
+                {"name": "status_code", "expression": "`status_code`"},
+                {"name": "execution_duration_ms", "expression": "`execution_duration_ms`"},
+                {"name": "requester", "expression": "`requester`"}
+              ],
+              "disaggregated": true
+            }
+          }],
+          "spec": {
+            "version": 2,
+            "widgetType": "table",
+            "encodings": {
+              "columns": [
+                {"fieldName": "databricks_request_id", "displayName": "Request ID"},
+                {"fieldName": "request_time", "displayName": "Time"},
+                {"fieldName": "status_code", "displayName": "Status"},
+                {"fieldName": "execution_duration_ms", "displayName": "Latency (ms)"},
+                {"fieldName": "requester", "displayName": "Requester"}
+              ]
+            },
+            "frame": {"showTitle": true, "title": "Recent Requests"}
+          }
+        },
+        "position": {"x": 0, "y": 22, "width": 6, "height": 6}
+      }
+    ]
+  }]
+}
