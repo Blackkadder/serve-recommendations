@@ -1,0 +1,31 @@
+bundle:
+  name: serve-recommendations
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: main
+  schema:
+    default: model_serving
+  model_name:
+    default: recommendation_model
+  endpoint_name:
+    default: recommendation-endpoint
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: dev-recommendation-endpoint
+
+  prod:
+    mode: production
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: recommendation-endpoint

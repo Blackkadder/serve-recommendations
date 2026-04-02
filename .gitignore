@@ -1,3 +1,10 @@
+.databricks-resources.json
+.mcp.json
+
+.claude
+.ai-dev-kit
+.cursor
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

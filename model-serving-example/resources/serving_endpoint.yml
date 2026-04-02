@@ -1,0 +1,16 @@
+resources:
+  model_serving_endpoints:
+    recommendation_endpoint:
+      name: ${var.endpoint_name}
+      config:
+        served_entities:
+          - entity_name: ${var.catalog}.${var.schema}.${var.model_name}
+            entity_version: "8"
+            workload_size: Small
+            scale_to_zero_enabled: true
+            environment_vars:
+              ZEROBUS_SERVER_ENDPOINT: "{{secrets/zerobus/server_endpoint}}"
+              DATABRICKS_WORKSPACE_URL: "{{secrets/zerobus/workspace_url}}"
+              DATABRICKS_CLIENT_ID: "{{secrets/zerobus/client_id}}"
+              DATABRICKS_CLIENT_SECRET: "{{secrets/zerobus/client_secret}}"
+              ZEROBUS_TABLE_NAME: "${var.catalog}.${var.schema}.recommendation_logs"
