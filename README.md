@@ -2,6 +2,11 @@
 
 A Databricks Model Serving endpoint that serves item recommendations using a custom MLflow pyfunc model. The model uses a three-tier heuristic (exact match, partial match, fallback) and streams prediction telemetry to a Unity Catalog table via Zerobus Ingest.
 
+## Folders
+
+- **`model-serving-example/`** -- A custom MLflow pyfunc model served via Databricks Model Serving (see details below).
+- **`gpu-serving/`** -- An example of using Databricks to host Hugging Face models as model serving endpoints.
+
 ## How It Works
 
 The model accepts a `category` string and returns ranked recommendations:

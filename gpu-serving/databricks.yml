@@ -1,0 +1,31 @@
+bundle:
+  name: gpu-serving
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: main
+  schema:
+    default: model_serving
+  model_name:
+    default: arctic_embed_model
+  endpoint_name:
+    default: arctic-embed-endpoint
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: dev-arctic-embed-endpoint
+
+  prod:
+    mode: production
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: arctic-embed-endpoint
