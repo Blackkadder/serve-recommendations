@@ -59,7 +59,8 @@ def main():
             pip_requirements=[
                 "mlflow>=3.0",
                 "pandas",
-                "transformers>=4.39.3",
+                "torch==2.5.1",
+                "transformers==4.39.3",
                 "accelerate>=0.25",
                 "sentencepiece",
             ],
