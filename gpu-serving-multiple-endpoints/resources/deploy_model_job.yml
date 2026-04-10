@@ -1,0 +1,30 @@
+resources:
+  jobs:
+    register_multi_embed_model:
+      name: "[${bundle.target}] Register Multi Embed Model"
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: model_name
+          default: ${var.model_name}
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - mlflow>=3.0
+              - pandas
+      tasks:
+        - task_key: register_model
+          environment_key: default
+          spark_python_task:
+            python_file: ../src/register_model.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+              - "--model-name"
+              - "{{job.parameters.model_name}}"

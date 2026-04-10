@@ -1,0 +1,31 @@
+bundle:
+  name: gpu-serving-multiple-endpoints
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: main
+  schema:
+    default: model_serving
+  model_name:
+    default: multi_embed_model
+  endpoint_name:
+    default: multi-embed-endpoint
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: dev-multi-embed-endpoint
+
+  prod:
+    mode: production
+    workspace:
+      profile: DEV
+    variables:
+      endpoint_name: multi-embed-endpoint
